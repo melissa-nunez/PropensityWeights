@@ -15,7 +15,6 @@ library(knitr)
 library(kableExtra)
 library(dplyr)
 
-
 # Load Data
 study58_com <- read.csv("/Users/user/Dropbox/Melissa/Study58/study58_com_dataset.csv")
 study58_incom <- read.csv("/Users/user/Dropbox/Melissa/Study58/study58_incom_dataset.csv")
@@ -42,9 +41,7 @@ study58_merged$change_hippocampus <- study58_merged$Right.Hippocampus.y - study5
 ```
 
 
-
 Goal: Use Inverse Propensity Treatment Weights to achieve balanced baseline variables between subjects who have T1 imaging data and subjects who do not. Compare linear models between weighted data and original data.
-
 
 
 ```{r Sample Size Tables, echo=FALSE, warning=FALSE}
@@ -73,10 +70,7 @@ colnames(missingsub) <- c(rep("",8))
 kable(missingsub, format = "html", caption = "Subjects With Missing T1 Baseline Images") %>% kable_styling(bootstrap_options = "striped", full_width = F)
 
 ```
-
-
-The following baseline variables were tested for population based differences between both groups. Normality was assesed with qqplots and the Shapiro Wilk test. T tests were used for variables that were concluded to be approximately normal, while Wilcoxon Rank Sum tests were used for the rest. Significant variables are highligted.
-
+The following pre-specified, baseline variables were tested for population based differences between both groups. Normality was assesed with qqplots and the Shapiro Wilk test. T tests were used for variables that were concluded to be approximately normal, while Wilcoxon Rank Sum tests were used for the rest. Significant variables are highligted.
 
 ```{r, echo=FALSE, warning=FALSE}
 # Function checks normality of variables using shapiro test, if normal then checks constant variance and runs ttest. If not normal then wilcoxon test is used.
@@ -123,13 +117,7 @@ study58_merged$IPW <- IPW
 # write.csv(study58_merged,"/Users/user/Dropbox/Melissa/Study58/Study58_Merged_NeuroPreAndPost.csv")
 
 # Regression Model
-
-# Check Normality of outcome variable change n hippocampus
-# qqnorm(study58_merged$change_hippocampus);qqline(study58_merged$change_hippocampus, col = 2)
-# qqnorm(study58_merged$Right.Hippocampus.x);qqline(study58_merged$Right.Hippocampus.x, col = 2)
-
 regmod_without_weights <- lm(change_hippocampus ~ random_group + Right.Hippocampus.x, data = study58_merged)
-
 regmod_with_weights <- lm(change_hippocampus ~ random_group + Right.Hippocampus.x, data = study58_merged, weights = study58_merged$IPW)
 
 # Check constant variance of residuals for model without weights
