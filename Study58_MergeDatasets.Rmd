@@ -1,5 +1,5 @@
 ---
-title: "Study 58 Merged Demographic, Cognitive, and Brain Imaging Data Sets"
+title: "Prepare Study 58 Data"
 author: "Melissa Nunez"
 date: "8/16/2018"
 output: html_document
@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r Data Prep, echo=FALSE}
 ##################################################################
-#                     Data Preperation                            
+                      Data Preperation                            
 ##################################################################
 
 getwd()
