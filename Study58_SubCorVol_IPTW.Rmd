@@ -25,7 +25,7 @@ study58_rg2 <- study58[study58$random_group == 2,]
 
 ```
 
-Baseline Differences in Subcortical Volume Between Random Groups. Regression model for last column is sub_cor_measure_baseline = random_group + np_gender + IntraCranialVolume.x + np_age where sub_cor_measure_baseline is the subcortical volume measure being analyzed.
+Baseline Differences in Subcortical Volume Between Randomized Groups. 
 
 ```{r Random Group Baseline Comparison, echo = FALSE, warning = FALSE}
 # Function calculates mean, standard deviation, checks constant variance, and then runs ttest and wilcoxon test ( 2 variables) .
@@ -59,9 +59,6 @@ kable(rg_summary, format = "html") %>%
 # Significant variables: Left.Inf.Lat.Vent, Left.Caudate, Right.Caudate, Right.Accumbens.area.
 # Possible Significant variables: Left.Putamen
 ```
-
-
-
 
 ## Distribution of Baseline Variables with Significant Difference Between Random Groups
 ```{r plots of significant variables, echo = FALSE, warning = FALSE}
@@ -105,8 +102,6 @@ grid.arrange(plot_Left.Inf.Lat.Vent, plot_Left.Caudate, ncol = 2)
 grid.arrange(plot_Right.Caudate, plot_Right.Accumbens.area, ncol = 2)
 grid.arrange(plot_Left.Putamen, ncol = 1)
 ```
-
-
 
 
 ## Regression Models With Change Score of Subcortical Volume Measures as Outcome
@@ -154,9 +149,6 @@ kable(pvals, format = "html") %>%
 
 ```
 
-
-
-
 Regression Model: change_score = random_group\*np_age + sub_cor_measure_baseline + IntraCranialVolume_post + np_age + np_gender where sub_cor_measure_baseline is the subcortical volume measure being analyzed. P values are of the random_group\*np_age interaction effect. 
 ```{r Change in Subcortical Volume Regression w/ interaction, echo=FALSE}
 runglm_inter <- function(xvar) {
@@ -191,4 +183,4 @@ kable(pvals_inter, format = "html") %>%
 
 
 ```
-
+After applying the multiple comparison adjustment, none of the interaction effect terms were significant.
