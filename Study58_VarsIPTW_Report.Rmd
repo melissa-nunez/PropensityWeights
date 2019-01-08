@@ -1,0 +1,149 @@
+---
+title: "Study58 Inverse Propensity Treatment Weighting for Subjects With T1 Baseline Images VS Subjects Without"
+author: "Melissa Nunez"
+date: "8/22/2018"
+output: html_document
+---
+
+```{r Data Preparation, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(gridExtra)
+library(tableone)
+library(survey)
+library(nlme)
+library(knitr)
+library(kableExtra)
+library(dplyr)
+
+
+# Load Data
+study58_com <- read.csv("/Users/user/Dropbox/Melissa/Study58/study58_com_dataset.csv")
+study58_incom <- read.csv("/Users/user/Dropbox/Melissa/Study58/study58_incom_dataset.csv")
+neuroimaging_post <- read.csv("/Users/user/Dropbox/Melissa/Study58/rawdata/Angeliki_FreeSurferCleanResults_Post_2018_2_8_Exercise58_AllData_WithICV.csv")
+
+# Some data wrangling
+neuroimaging_post$subid <- gsub("P000","", neuroimaging_post$subid)
+head(neuroimaging_post,10)
+study58_com <- data.frame(study58_com)
+study58_incom <-data.frame(study58_incom)
+
+# Create variable for missing vs not missing images
+study58_com$neuro_data <- 1
+study58_incom$neuro_data <- 0
+
+# Merge datasets
+study58 <- rbind(study58_com, study58_incom)
+study58_merged <- merge(study58,neuroimaging_post, by.x = "subject_id", by.y = "subid", all.x = TRUE)
+study58_merged[which(is.na(study58_merged$change_hippocampus)),names(study58_merged[1:3])]
+
+# Create change variable - this variable is the difference between post hippocampus value and baseline hippocampus value
+study58_merged$change_hippocampus <- study58_merged$Right.Hippocampus.y - study58_merged$Right.Hippocampus.x
+
+```
+
+
+
+Goal: Use Inverse Propensity Treatment Weights to achieve balanced baseline variables between subjects who have T1 imaging data and subjects who do not. Compare linear models between weighted data and original data.
+
+
+
+```{r Sample Size Tables, echo=FALSE, warning=FALSE}
+# Create table for sample size
+samplesize <- addmargins(table(study58_merged$random_group,study58_merged$neuro_data))
+colnames(samplesize) <- c("No Images","With Images", "Sum")
+
+# Sample size table for both random group and imaging data using kable (prettier)
+kable(samplesize, caption = "Sample Size by Random Treatment Group (rows) and T1 Image  Availability (columns)", format = "html") %>% kable_styling(bootstrap_options = "striped", full_width = F) %>% column_spec(1, bold = T)
+
+# Create multiple columns of missing subject ID for table - this is for the upcoming table
+missingsubjects <- study58_merged[study58_merged$neuro_data==0,]$subject_id
+ten <- missingsubjects[1:5]
+twenty <- missingsubjects[6:10]
+thirty <- missingsubjects[11:15]
+nine <- missingsubjects[16:20]
+eight <- missingsubjects[21:25]
+seven <- missingsubjects[26:30]
+six<- missingsubjects[31:35]
+five <- missingsubjects[36:39]
+missingsub <- cbind(ten,twenty,thirty,nine,eight,seven,six,five)
+missingsub[5,8] <- ""
+colnames(missingsub) <- c(rep("",8))
+
+# Table of subject IDs for those missing T1 images
+kable(missingsub, format = "html", caption = "Subjects With Missing T1 Baseline Images") %>% kable_styling(bootstrap_options = "striped", full_width = F)
+
+```
+
+
+The following baseline variables were tested for population based differences between both groups. Normality was assesed with qqplots and the Shapiro Wilk test. T tests were used for variables that were concluded to be approximately normal, while Wilcoxon Rank Sum tests were used for the rest. Significant variables are highligted.
+
+
+```{r, echo=FALSE, warning=FALSE}
+# Function checks normality of variables using shapiro test, if normal then checks constant variance and runs ttest. If not normal then wilcoxon test is used.
+
+ run.tests.for.diff<-function(yvar){
+  shapiro.p.com <- shapiro.test(study58_com%>%select(yvar)%>%unlist())$p.value
+  shapiro.p.incom <- shapiro.test(study58_incom%>%select(yvar)%>%unlist())$p.value
+  
+  if((shapiro.p.com > 0.05) & (shapiro.p.incom > 0.05)) {
+    test = "T test"
+  re=var.test(study58_com%>%select(yvar)%>%unlist(),study58_incom%>%select(yvar)%>%unlist(), alternative = "two.sided")$p.value
+  ttest=t.test(study58_com%>%select(yvar)%>%unlist(),study58_incom%>%select(yvar)%>%unlist(), var.equal=(re >.05), paired=FALSE)$p.value
+  return(c(yvar,round(ttest,4), test))
+  } else {
+    test = "Wilcoxon test"
+    Wilcoxtest=wilcox.test(study58_com%>%select(yvar)%>%unlist(),study58_incom%>%select(yvar)%>%unlist(), alternative = "two.sided")$p.value
+    return(c(yvar,round(Wilcoxtest, 4), test))
+  }
+}
+
+# Apply mean difference function to pre-specified variables
+subtests <- data.frame(do.call(rbind,lapply(names(study58_com)[c(5,11,15:25,39:41)],run.tests.for.diff)))
+colnames(subtests) <- c("Variable", "P Value", "Test")
+
+# Table of tests and p values
+kable(subtests, format = "html", caption = "Baseline Variable Differences Between Subjects With T1 Images VS Subjects Without") %>% kable_styling(bootstrap_options = "striped", full_width = F) %>% row_spec(4:6, background = "lightyellow")
+
+```
+
+A logistic regression model, with T1 image availability as the outcome and the prior significant variables as the predictors, was used to acquire propensity scores and propensity weights for each subject. A linear regression model was then used to model change in right hippocampus with random treatment group and baseline right hippocampus as the independent variables. This model was used with both the original data and the weighted data for comparison. The output is as follows:
+
+```{r, echo=FALSE, warning=FALSE}
+# Propensity Score Model
+psmodel <- glm(neuro_data ~ np_tiadl_tot_err + np_tiadl_tot_err_minor + np_tiadl_tot_err_major, data = study58_merged, family = binomial(link = "logit"))
+
+# Propensity scores
+ps <- predict(psmodel, type = "response")
+
+# Create Weights from Propensity Scores
+IPW <- ifelse(study58_merged$neuro_data==1, 1/(ps), 1/(1-ps))
+study58_merged$IPW <- IPW
+
+# Save data with calculated IPW as a column
+# write.csv(study58_merged,"/Users/user/Dropbox/Melissa/Study58/Study58_Merged_NeuroPreAndPost.csv")
+
+# Regression Model
+
+# Check Normality of outcome variable change n hippocampus
+# qqnorm(study58_merged$change_hippocampus);qqline(study58_merged$change_hippocampus, col = 2)
+# qqnorm(study58_merged$Right.Hippocampus.x);qqline(study58_merged$Right.Hippocampus.x, col = 2)
+
+regmod_without_weights <- lm(change_hippocampus ~ random_group + Right.Hippocampus.x, data = study58_merged)
+
+regmod_with_weights <- lm(change_hippocampus ~ random_group + Right.Hippocampus.x, data = study58_merged, weights = study58_merged$IPW)
+
+# Check constant variance of residuals for model without weights
+plot(fitted(regmod_without_weights), resid(regmod_without_weights), xlab = "Predicted/Fitted value", ylab = "Residual")
+title("(a) Residual Plot for Y (Survival) ")
+abline(0, 0)
+
+# Check constant variance of residuals for model with weights
+plot(fitted(regmod_with_weights), resid(regmod_with_weights), xlab = "Predicted/Fitted value", ylab = "Residual")
+title("(a) Residual Plot for Y (Survival) ")
+abline(0, 0)
+
+summary(regmod_without_weights)
+summary(regmod_with_weights)
+```
+
+Comparing both models, the adjusted r squared decreased by 0.0223 for the weighted data model. Both models have baseline right hippocampus as significant and random group as non-significant. The coefficient for baseline right hippocampus increased by 0.02238 units for the weighted model. The random group coefficient increased for the weighted model as well, specifically by 25.75284 units. Therefore, applying propensity weights does not seem to have changed the outcome.

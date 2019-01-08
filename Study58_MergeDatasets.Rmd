@@ -1,0 +1,66 @@
+---
+title: "Study 58 Merged Demographic, Cognitive, and Brain Imaging Data Sets"
+author: "Melissa Nunez"
+date: "8/16/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r Data Prep, echo=FALSE}
+##################################################################
+#                     Data Preperation                            
+##################################################################
+
+getwd()
+setwd("/Users/user/Dropbox/Melissa/Study58")
+
+# study58pre_imaging contains brain imaging variables only
+study58pre_imaging <- read.csv("/Users/user/Dropbox/Melissa/Study58/rawdata/Angeliki_FreeSurferCleanResults_Pre_2018_2_8_Exercise58_AllData_WithICV.csv")
+
+#install.packages("sas7bdat")
+library(sas7bdat)
+
+# study58 contains cognitive measure variables only
+study58 <- read.sas7bdat("/Users/user/Dropbox/Melissa/Study58/rawdata/voxmerged_weightmerged_edufixed.sas7bdat")
+
+# Some data wrangling
+study58pre_imaging$subid <- gsub("P000","", study58pre_imaging$subid)
+study58pre_imaging$visitid <- gsub("S000","", study58pre_imaging$visitid)
+
+# Merge cognitive and brain imaging variables
+study58_merge <- merge(study58, study58pre_imaging, by.x = c("subject_id","time_point"), by.y = c("subid","visitid"), all = TRUE)
+
+# Missing values are represented by 'NaN' and empty cells - we want NA
+study58_merge <- replace(study58_merge, study58_merge == "NaN", NA)
+study58_merge <- replace(study58_merge, study58_merge == "", NA)
+
+# Subset for available time_point
+study58_merge <- study58_merge[!is.na(study58_merge$time_point),]
+
+study58_merge_subset <- study58_merge[study58_merge$random_group %in% c(1,2) & study58_merge$time_point == 1,c(1:13, 54:57, 589:618, 621:1010)]
+
+# Check for missing variables and view first 20 rows
+sum(is.na(study58_merge_subset$age_group))
+head(study58_merge_subset,20)
+
+# Subset participants without imaging variables available
+study58_incom <- study58_merge_subset[which(is.na(study58_merge_subset$Left.Lateral.Ventricle)),]
+
+# Subset participants with imaging variables available
+study58_com <- study58_merge_subset[!is.na(study58_merge_subset$Left.Lateral.Ventricle),]
+
+# Some quick data checks and summary
+sum(is.na(study58_com$mmemax_base))
+sum(is.na(study58_incom$mmemax_base))
+study58_com[which((is.na(study58_com$mmemax_base))),]
+summary(study58_com[,1:47])
+
+# Write csv
+write.csv(study58_com, file = "study58_com_dataset.csv")
+write.csv(study58_incom, file = "study58_incom_dataset.csv")
+write.csv(study58_merge, file = "study58_merge_dataset.csv")
+```
