@@ -134,4 +134,8 @@ summary(regmod_without_weights)
 summary(regmod_with_weights)
 ```
 
-Comparing both models, the adjusted r squared decreased by 0.0223 for the weighted data model. Both models have baseline right hippocampus as significant and random group as non-significant. The coefficient for baseline right hippocampus increased by 0.02238 units for the weighted model. The random group coefficient increased for the weighted model as well, specifically by 25.75284 units. Therefore, applying propensity weights does not seem to have changed the outcome.
+Comparing both models, the adjusted r squared decreased by 0.0223 for the weighted data model. 
+Both models have baseline right hippocampus as significant and random group as non-significant. 
+The coefficient for baseline right hippocampus increased by 0.02238 units for the weighted model. 
+The random group coefficient increased for the weighted model as well, specifically by 25.75284 units. 
+Therefore, applying propensity weights does not seem to have changed the outcome.
