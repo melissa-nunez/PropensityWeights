@@ -8,4 +8,4 @@ with and without neuroimgaing data available were calculated. Using the signific
 Ultimately, regression models were created to test whether the propensity weights changed the associations between change in 
 a specific and pre-determined neuroimaging variable and random treatment group.
 
-In the "Study58_SubCorVol_IPTW.Rmd" file, a series of subcortival volumes were used as the outcome of linear regression models to asses whether they differe between random groups, accounting for other variables. The models with and without propensity weights were compared.
+In the "Study58_SubCorVol_IPTW.Rmd" file, a series of subcortival volume measures were used as the outcome of linear regression models to asses whether they differ between the radomization groups, accounting for other variables. The models with and without propensity weights were compared.
