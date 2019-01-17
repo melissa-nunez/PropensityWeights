@@ -67,34 +67,34 @@ kable(rg_summary, format = "html") %>%
 library("ggplot2")
 plot_Left.Inf.Lat.Vent <- ggplot(study58, aes(x=factor(random_group), y=Left.Inf.Lat.Vent.x, fill = factor(random_group))) + 
   geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
-  geom_jitter(position=position_jitter(width=.1, height=0)) + 
+  geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
   labs(title = "Distribution of Left.Inf.Lat.Vent", x = "Random Group", y = "Left.Inf.Lat.Vent.Baseline") + 
   guides(fill=FALSE)
 
 plot_Left.Caudate <- ggplot(study58, aes(x=factor(random_group), y=Left.Caudate.x, fill = factor(random_group))) + 
   geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
-  geom_jitter(position=position_jitter(width=.1, height=0)) + 
+  geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
   labs(title =  "Distribution of Left.Caudate" ,x = "Random Group", y = "Left.Caudate.Baseline") + 
   guides(fill=FALSE)
 
 
 plot_Right.Caudate <- ggplot(study58, aes(x=factor(random_group), y=Right.Caudate.x, fill = factor(random_group))) + 
   geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
-  geom_jitter(position=position_jitter(width=.1, height=0)) + 
+  geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
   labs(title =  "Distribution of Right.Caudate" ,x = "Random Group", y = "Right.Caudate.Baseline") + 
   guides(fill=FALSE)
 
 
 plot_Right.Accumbens.area <- ggplot(study58, aes(x=factor(random_group), y=Right.Accumbens.area.x, fill = factor(random_group))) + 
   geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
-  geom_jitter(position=position_jitter(width=.1, height=0)) + 
+  geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
   labs(title =  "Distribution of Right.Accumbens.area" ,x = "Random Group", y = "Right.Accumbens.area.Baseline") + 
   guides(fill=FALSE)
 
 
 plot_Left.Putamen <- ggplot(study58, aes(x=factor(random_group), y=Left.Putamen.x, fill = factor(random_group))) + 
   geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
-  geom_jitter(position=position_jitter(width=.1, height=0)) + 
+  geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
   labs(title =  "Distribution of Left.Putamen" ,x = "Random Group", y = "Left.Putamen.Baseline") + 
   guides(fill=FALSE)
 
