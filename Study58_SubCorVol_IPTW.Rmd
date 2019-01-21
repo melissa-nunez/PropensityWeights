@@ -18,6 +18,7 @@ library(nlme)
 library(knitr)
 library(kableExtra)
 library(dplyr)
+library(ggplot2)
 
 study58 <- read.csv("/Users/user/Dropbox/Melissa/Study58/Study58_Merged_NeuroPreAndPost.csv")
 study58_rg1 <- study58[study58$random_group == 1,]
@@ -50,11 +51,17 @@ Baseline Differences in Subcortical Volume Between Randomized Groups.
  
 rg_summary <- data.frame(do.call(rbind,lapply(names(study58_rg1)[c(50:65,68:79,82:83,90:94)],runttest)))
 
-colnames(rg_summary) <- c("Variable", "RG1 Mean", "RG2 Mean", "RG1 SD", "RG2 SD", "Wilcoxon Test", "T.Test", "Reg Model P.Value")
+colnames(rg_summary) <- c("Variable", "RG1 Mean", "RG2 Mean", "RG1 SD", "RG2 SD", "Wilcoxon Test", "T.Test", "P.Value")
 
-kable(rg_summary, format = "html") %>%
-  kable_styling(bootstrap_options = "striped", full_width = F) %>%
-  row_spec(c(2,6,7,22,27), background = "lightyellow")
+# Extract significant variables, I add ".x" to the variables because this denotes baseline
+sigvars <- rg_summary %>%
+  filter(as.numeric(as.character(P.Value)) <= 0.05) %>%
+  select(Variable) %>%
+  lapply(paste,".x", sep = "")
+
+rg_summary %>%
+ kable(format = "latex") %>%
+ kable_styling(latex_options = "scale_down")
 
 # Significant variables: Left.Inf.Lat.Vent, Left.Caudate, Right.Caudate, Right.Accumbens.area.
 # Possible Significant variables: Left.Putamen
@@ -64,43 +71,22 @@ kable(rg_summary, format = "html") %>%
 ```{r plots of significant variables, echo = FALSE, warning = FALSE}
 # Boxplots of significant variables
 
-library("ggplot2")
-plot_Left.Inf.Lat.Vent <- ggplot(study58, aes(x=factor(random_group), y=Left.Inf.Lat.Vent.x, fill = factor(random_group))) + 
+# Create function for boxplots
+boxplots <- function (yvar) {
+  ggplot(study58, aes_string(x="random_group", y = yvar, fill = "random_group")) + 
   geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
   geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
-  labs(title = "Distribution of Left.Inf.Lat.Vent", x = "Random Group", y = "Left.Inf.Lat.Vent.Baseline") + 
+  labs(title = paste("Distribution of", yvar), x = "Random Group", y = yvar) + 
   guides(fill=FALSE)
+}
 
-plot_Left.Caudate <- ggplot(study58, aes(x=factor(random_group), y=Left.Caudate.x, fill = factor(random_group))) + 
-  geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
-  geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
-  labs(title =  "Distribution of Left.Caudate" ,x = "Random Group", y = "Left.Caudate.Baseline") + 
-  guides(fill=FALSE)
+# Using lapply and my boxplot function
+sigplots <- lapply(unlist(sigvars), boxplots)
 
-
-plot_Right.Caudate <- ggplot(study58, aes(x=factor(random_group), y=Right.Caudate.x, fill = factor(random_group))) + 
-  geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
-  geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
-  labs(title =  "Distribution of Right.Caudate" ,x = "Random Group", y = "Right.Caudate.Baseline") + 
-  guides(fill=FALSE)
-
-
-plot_Right.Accumbens.area <- ggplot(study58, aes(x=factor(random_group), y=Right.Accumbens.area.x, fill = factor(random_group))) + 
-  geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
-  geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
-  labs(title =  "Distribution of Right.Accumbens.area" ,x = "Random Group", y = "Right.Accumbens.area.Baseline") + 
-  guides(fill=FALSE)
-
-
-plot_Left.Putamen <- ggplot(study58, aes(x=factor(random_group), y=Left.Putamen.x, fill = factor(random_group))) + 
-  geom_boxplot(outlier.shape=NA) + #avoid plotting outliers twice
-  geom_jitter(position=position_jitter(width=.1, height=0), shape = 1) + 
-  labs(title =  "Distribution of Left.Putamen" ,x = "Random Group", y = "Left.Putamen.Baseline") + 
-  guides(fill=FALSE)
-
-grid.arrange(plot_Left.Inf.Lat.Vent, plot_Left.Caudate, ncol = 2)
-grid.arrange(plot_Right.Caudate, plot_Right.Accumbens.area, ncol = 2)
-grid.arrange(plot_Left.Putamen, ncol = 1)
+# Arrange plots of "Left.Inf.Lat.Vent.x", "Left.Putamen.x", "Right.Caudate.x", "Right.Accumbens.area.x" , and "Left.Caudate.x" .
+grid.arrange(sigplots[[1]], sigplots[[3]], ncol = 2)
+grid.arrange(sigplots[[6]], sigplots[[8]], ncol = 2)
+grid.arrange(sigplots[[4]], ncol = 1)
 ```
 
 
@@ -125,12 +111,6 @@ runglm <- function(xvar) {
   varname <- gsub('.{2}$', '', xvar)
   return(c(varname, meanchange_rg1, meanchange_rg2, rg1_sd, rg2_sd, round(regmod, 4), round(regmod_weights, 4)))
 }
-
-
-#change = study58$Left.Lateral.Ventricle.x - study58$Left.Lateral.Ventricle.y
-#summary(lm(change ~ random_group + Left.Lateral.Ventricle.x + IntraCranialVolume.y + np_age + np_gender, data = study58))
-
-#anova(lm(change ~ random_group + Left.Lateral.Ventricle.x +  IntraCranialVolume.y + np_age + np_gender, data = study58, weights = study58$IPW))[1,5]
 
 pvals=data.frame(do.call(rbind,lapply(names(study58)[c(50:65)],runglm)))
 
