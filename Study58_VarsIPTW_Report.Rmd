@@ -41,7 +41,8 @@ study58_merged$change_hippocampus <- study58_merged$Right.Hippocampus.y - study5
 ```
 
 
-Goal: Use Inverse Propensity Treatment Weights to achieve balanced baseline variables between subjects who have T1 imaging data and subjects who do not. Compare linear models between weighted data and original data.
+Goal: Use Inverse Propensity Treatment Weights to achieve balanced baseline variables between subjects who have T1 imaging data and 
+subjects who do not. Compare linear models between weighted data and original data.
 
 
 ```{r Sample Size Tables, echo=FALSE, warning=FALSE}
@@ -70,7 +71,9 @@ colnames(missingsub) <- c(rep("",8))
 kable(missingsub, format = "html", caption = "Subjects With Missing T1 Baseline Images") %>% kable_styling(bootstrap_options = "striped", full_width = F)
 
 ```
-The following pre-specified, baseline variables were tested for population based differences between both groups. Normality was assesed with qqplots and the Shapiro Wilk test. T tests were used for variables that were concluded to be approximately normal, while Wilcoxon Rank Sum tests were used for the rest. Significant variables are highligted.
+The following pre-specified, baseline variables were tested for population based differences between both groups. Normality was assesed
+with qqplots and the Shapiro Wilk test. T tests were used for variables that were concluded to be approximately normal, while Wilcoxon
+Rank Sum tests were used for the rest. Significant variables are highligted.
 
 ```{r, echo=FALSE, warning=FALSE}
 # Function checks normality of variables using shapiro test, if normal then checks constant variance and runs ttest. If not normal then wilcoxon test is used.
@@ -100,7 +103,10 @@ kable(subtests, format = "html", caption = "Baseline Variable Differences Betwee
 
 ```
 
-A logistic regression model, with T1 image availability as the outcome and the prior significant variables as the predictors, was used to acquire propensity scores and propensity weights for each subject. A linear regression model was then used to model change in right hippocampus with random treatment group and baseline right hippocampus as the independent variables. This model was used with both the original data and the weighted data for comparison. The output is as follows:
+A logistic regression model, with T1 image availability as the outcome and the prior significant variables as the predictors, was used to
+acquire propensity scores and propensity weights for each subject. A linear regression model was then used to model change in right
+hippocampus with random treatment group and baseline right hippocampus as the independent variables. This model was used with both the
+original data and the weighted data for comparison. The output is as follows:
 
 ```{r, echo=FALSE, warning=FALSE}
 # Propensity Score Model
@@ -134,7 +140,7 @@ summary(regmod_without_weights)
 summary(regmod_with_weights)
 ```
 
-Comparing both models, the adjusted r squared decreased by 0.0223 for the weighted data model. 
+Comparing both models, the adjusted r squared decreased by 0.0223 for the weighted data model.
 Both models have baseline right hippocampus as significant and random group as non-significant. 
 The coefficient for baseline right hippocampus increased by 0.02238 units for the weighted model. 
 The random group coefficient increased for the weighted model as well, specifically by 25.75284 units. 
