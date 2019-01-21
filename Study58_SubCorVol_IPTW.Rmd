@@ -21,39 +21,53 @@ library(dplyr)
 library(ggplot2)
 
 study58 <- read.csv("/Users/user/Dropbox/Melissa/Study58/Study58_Merged_NeuroPreAndPost.csv")
-study58_rg1 <- study58[study58$random_group == 1,]
-study58_rg2 <- study58[study58$random_group == 2,]
+
+study58_rg1 <- study58 %>%
+  filter(random_group == 1)
+  
+study58_rg2 <- study58 %>%
+  filter(random_group == 2)
 
 ```
 
-Baseline Differences in Subcortical Volume Between Randomized Groups. 
+##Baseline Differences in Subcortical Volume Measures Between Random Groups. 
+
+For a series of subcortical volume measures, both t-tests and the wilcoxon test were used to test for differences between the randomization groups The following table presents the mean, standard deviation, t-test p-value, and wilcoxon p-value for differences. The final column, "P.Value", gives the p-value for the random_group variable of the following regression model: sub_cor_measure_baseline = random_group + np_gender + IntraCranialVolume.x + np_age where sub_cor_measure_baseline is the subcortical volume measure being analyzed.
 
 ```{r Random Group Baseline Comparison, echo = FALSE, warning = FALSE}
 # Function calculates mean, standard deviation, checks constant variance, and then runs ttest and wilcoxon test ( 2 variables) .
 
- runttest<-function(yvar){
+ run.tests<-function(yvar){
+
+# Mean and Standard Deviation for random groups 1 & 2   
+rg1_mean <- mean(study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE)
+rg2_mean <- mean(study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE)
    
-   rg1_mean <- mean(study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE)
-   rg2_mean <- mean(study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE)
-   
-   rg1_sd <- sd(study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE)
-   rg2_sd <- sd(study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE)
+rg1_sd <- sd(study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE)
+rg2_sd <- sd(study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE)
   
-  re=var.test(study58_rg1%>%select(yvar)%>%unlist(),study58_rg2%>%select(yvar)%>%unlist(), alternative = "two.sided")$p.value
-  ttest=t.test(study58_rg1%>%select(yvar)%>%unlist(),study58_rg2%>%select(yvar)%>%unlist(), var.equal=(re >.05), paired=FALSE)$p.value
-    Wilcoxtest=wilcox.test(study58_rg1%>%select(yvar)%>%unlist(),study58_rg2%>%select(yvar)%>%unlist(), alternative = "two.sided")$p.value
+# Check equality of variance for ttest
+eqvar_pval=var.test(study58_rg1%>%select(yvar)%>%unlist(),study58_rg2%>%select(yvar)%>%unlist(), alternative = "two.sided")$p.value
+
+# T-test - p.value
+ttest_pval=t.test(study58_rg1%>%select(yvar)%>%unlist(),study58_rg2%>%select(yvar)%>%unlist(), var.equal=(eqvar_pval >.05), paired=FALSE)$p.value
+
+# Wilcoxon test - p.value
+Wilcoxtest_pval=wilcox.test(study58_rg1%>%select(yvar)%>%unlist(),study58_rg2%>%select(yvar)%>%unlist(), alternative = "two.sided")$p.value
     
-    regmod <- anova(lm(study58%>%select(yvar)%>%unlist() ~ random_group + np_gender + IntraCranialVolume.x + np_age, data = study58))[1,5]
+# Extract p.value for variabe of interest while adjusting for variables
+regmod <- anova(lm(study58%>%select(yvar)%>%unlist() ~ random_group + np_gender + IntraCranialVolume.x + np_age, data = study58))[1,5]
     varname <- gsub('.{2}$', '', yvar)
-    return(c(varname, round(rg1_mean, 2), round(rg2_mean, 2), round(rg1_sd, 2), round(rg2_sd, 2), round(Wilcoxtest, 4), round(ttest, 4), round(regmod,4) ))
+    
+return(c(varname, round(rg1_mean, 2), round(rg2_mean, 2), round(rg1_sd, 2), round(rg2_sd, 2), round(Wilcoxtest_pval, 4), round(ttest_pval, 4), round(regmod,4) ))
   
  }
  
-rg_summary <- data.frame(do.call(rbind,lapply(names(study58_rg1)[c(50:65,68:79,82:83,90:94)],runttest)))
+# Apply function 
+rg_summary <- data.frame(do.call(rbind,lapply(names(study58_rg1)[c(50:65,68:79,82:83,90:94)],run.tests)))
 
 colnames(rg_summary) <- c("Variable", "RG1 Mean", "RG2 Mean", "RG1 SD", "RG2 SD", "Wilcoxon Test", "T.Test", "P.Value")
 
-# Extract significant variables, I add ".x" to the variables because this denotes baseline
 sigvars <- rg_summary %>%
   filter(as.numeric(as.character(P.Value)) <= 0.05) %>%
   select(Variable) %>%
@@ -63,14 +77,17 @@ rg_summary %>%
  kable(format = "latex") %>%
  kable_styling(latex_options = "scale_down")
 
+
 # Significant variables: Left.Inf.Lat.Vent, Left.Caudate, Right.Caudate, Right.Accumbens.area.
 # Possible Significant variables: Left.Putamen
 ```
 
 ## Distribution of Baseline Variables with Significant Difference Between Random Groups
 ```{r plots of significant variables, echo = FALSE, warning = FALSE}
-# Boxplots of significant variables
+# Factor random_group
+study58$random_group <- factor(study58$random_group)
 
+# Boxplots of significant variables
 # Create function for boxplots
 boxplots <- function (yvar) {
   ggplot(study58, aes_string(x="random_group", y = yvar, fill = "random_group")) + 
@@ -91,25 +108,30 @@ grid.arrange(sigplots[[4]], ncol = 1)
 
 
 ## Regression Models With Change Score of Subcortical Volume Measures as Outcome
-Regression Model: change_score = random_group + sub_cor_measure_baseline + IntraCranialVolume_post + np_age + np_gender where sub_cor_measure_baseline is the subcortical volume measure being analyzed. P values are of the random_group effect. 
+
+The following table presents the mean change score for each subcortical volume measurement, stratified by random group, and the standard deviation. Then, a regreesion model was used to acquire p-values for the random_group variable: 
+change_score = random_group + sub_cor_measure_baseline + IntraCranialVolume_post + np_age + np_gender where sub_cor_measure_baseline is the subcortical volume measure being analyzed. Each model was ran twice, one with and another without the propensity weights applied, and the p-values after multiple comparison correction are presented as well. 
 
 ```{r Change in Subcortical Volume Regression, echo=FALSE}
 runglm <- function(xvar) {
+
+yvar <- paste(gsub('.{2}$', '', xvar),".y", sep = "")
+change = study58%>%select(xvar)%>%unlist() - study58%>%select(yvar)%>%unlist()
   
-  yvar <- paste(gsub('.{2}$', '', xvar),".y", sep = "")
-  change = study58%>%select(xvar)%>%unlist() - study58%>%select(yvar)%>%unlist()
+meanchange_rg1 = round(mean(study58_rg1%>%select(xvar)%>%unlist() - study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
+
+meanchange_rg2 = round(mean(study58_rg2%>%select(xvar)%>%unlist() - study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
   
-  meanchange_rg1 = round(mean(study58_rg1%>%select(xvar)%>%unlist() - study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
-  meanchange_rg2 <- round(mean(study58_rg2%>%select(xvar)%>%unlist() - study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
+rg1_sd <- round(sd(study58_rg1%>%select(xvar)%>%unlist() - study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
+rg2_sd <- round(sd(study58_rg2%>%select(xvar)%>%unlist() - study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
   
-  rg1_sd <- round(sd(study58_rg1%>%select(xvar)%>%unlist() - study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
-  rg2_sd <- round(sd(study58_rg2%>%select(xvar)%>%unlist() - study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
+regmod <- anova(lm(change ~ random_group + IntraCranialVolume.y + np_age + np_gender, data = study58))[1,5]
+
+regmod_weights <- anova(lm(change ~ random_group + IntraCranialVolume.y + np_age + np_gender, data = study58, weights = study58$IPW))[1,5]
   
-  regmod <- anova(lm(change ~ random_group + IntraCranialVolume.y + np_age + np_gender, data = study58))[1,5]
-  regmod_weights <- anova(lm(change ~ random_group + IntraCranialVolume.y + np_age + np_gender, data = study58, weights = study58$IPW))[1,5]
+varname <- gsub('.{2}$', '', xvar)
   
-  varname <- gsub('.{2}$', '', xvar)
-  return(c(varname, meanchange_rg1, meanchange_rg2, rg1_sd, rg2_sd, round(regmod, 4), round(regmod_weights, 4)))
+return(c(varname, meanchange_rg1, meanchange_rg2, rg1_sd, rg2_sd, round(regmod, 4), round(regmod_weights, 4)))
 }
 
 pvals=data.frame(do.call(rbind,lapply(names(study58)[c(50:65)],runglm)))
@@ -119,36 +141,36 @@ colnames(pvals) <- c("Variable", "RG1 Mean Change", "RG2 Mean Change", "RG1 SD",
 pvals["Fdr.wo.weights"] = p.adjust(pvals$Pval.wo.weights,method='BH')
 pvals["Fdr.w.weights"] = p.adjust(pvals$Pval.w.weights,method='BH')
 
-#pvals %>% rename(pval.wo.weights=X6, pval.w.weights=X7) %>% 
-  #mutate(fdr.pval.wo.weights=p.adjust(pval.wo.weights,method='BH')) %>%
-  #mutate(fdr.pval.w.weights=p.adjust(pval.w.weights,method='BH'))
-
 kable(pvals, format = "html") %>%
   kable_styling(bootstrap_options = "striped", full_width = F) 
 
 
 ```
 
-Regression Model: change_score = random_group\*np_age + sub_cor_measure_baseline + IntraCranialVolume_post + np_age + np_gender where sub_cor_measure_baseline is the subcortical volume measure being analyzed. P values are of the random_group\*np_age interaction effect. 
+For this analysis, the p-values presented are of the interaction term between random_group and age at baseline.
+Regression Model: change_score = random_group\*np_age + sub_cor_measure_baseline + IntraCranialVolume_post + np_age + np_gender where sub_cor_measure_baseline is the subcortical volume measure being analyzed.
 ```{r Change in Subcortical Volume Regression w/ interaction, echo=FALSE}
 runglm_inter <- function(xvar) {
   
-  yvar <- paste(gsub('.{2}$', '', xvar),".y", sep = "")
-  change = study58%>%select(xvar)%>%unlist() - study58%>%select(yvar)%>%unlist()
+yvar <- paste(gsub('.{2}$', '', xvar),".y", sep = "")
+change = study58%>%select(xvar)%>%unlist() - study58%>%select(yvar)%>%unlist()
   
-  meanchange_rg1 = round(mean(study58_rg1%>%select(xvar)%>%unlist() - study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
-  meanchange_rg2 <- round(mean(study58_rg2%>%select(xvar)%>%unlist() - study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
-  
-  rg1_sd <- round(sd(study58_rg1%>%select(xvar)%>%unlist() - study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
-  rg2_sd <- round(sd(study58_rg2%>%select(xvar)%>%unlist() - study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
-  
-  regmod <- anova(lm(change ~ random_group*np_age + study58%>%select(xvar)%>%unlist() + IntraCranialVolume.y + np_age + np_gender, data = study58))[1,5]
-  regmod_weights <- anova(lm(change ~ random_group*np_age + study58%>%select(xvar)%>%unlist() + IntraCranialVolume.y + np_age + np_gender, data = study58, weights = study58$IPW))[1,5]
-  
-  varname <- gsub('.{2}$', '', xvar)
-  return(c(varname, meanchange_rg1, meanchange_rg2, rg1_sd, rg2_sd, round(regmod, 4), round(regmod_weights, 4)))
-}
+meanchange_rg1 = round(mean(study58_rg1%>%select(xvar)%>%unlist() - study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
 
+meanchange_rg2 <- round(mean(study58_rg2%>%select(xvar)%>%unlist() - study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
+  
+rg1_sd <- round(sd(study58_rg1%>%select(xvar)%>%unlist() - study58_rg1%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
+
+rg2_sd <- round(sd(study58_rg2%>%select(xvar)%>%unlist() - study58_rg2%>%select(yvar)%>%unlist(), na.rm = TRUE), 2)
+  
+regmod <- anova(lm(change ~ random_group*np_age + study58%>%select(xvar)%>%unlist() + IntraCranialVolume.y + np_age + np_gender, data = study58))[1,5]
+
+regmod_weights <- anova(lm(change ~ random_group*np_age + study58%>%select(xvar)%>%unlist() + IntraCranialVolume.y + np_age + np_gender, data = study58, weights = study58$IPW))[1,5]
+  
+varname <- gsub('.{2}$', '', xvar)
+
+return(c(varname, meanchange_rg1, meanchange_rg2, rg1_sd, rg2_sd, round(regmod, 4), round(regmod_weights, 4)))
+}
 
 pvals_inter=data.frame(do.call(rbind,lapply(names(study58)[c(50:65,68:79,82:83,90:94)],runglm_inter)))
 
