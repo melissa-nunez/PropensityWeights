@@ -32,7 +32,10 @@ study58_rg2 <- study58 %>%
 
 ##Baseline Differences in Subcortical Volume Measures Between Random Groups. 
 
-For a series of subcortical volume measures, both t-tests and the wilcoxon test were used to test for differences between the randomization groups The following table presents the mean, standard deviation, t-test p-value, and wilcoxon p-value for differences. The final column, "P.Value", gives the p-value for the random_group variable of the following regression model: sub_cor_measure_baseline = random_group + np_gender + IntraCranialVolume.x + np_age where sub_cor_measure_baseline is the subcortical volume measure being analyzed.
+For a series of subcortical volume measures, both t-tests and the wilcoxon test were used to test for differences between the
+randomization groups The following table presents the mean, standard deviation, t-test p-value, and wilcoxon p-value for differences. The
+final column, "P.Value", gives the p-value for the random_group variable of the following regression model: sub_cor_measure_baseline =
+random_group + np_gender + IntraCranialVolume.x + np_age where sub_cor_measure_baseline is the subcortical volume measure being analyzed.
 
 ```{r Random Group Baseline Comparison, echo = FALSE, warning = FALSE}
 # Function calculates mean, standard deviation, checks constant variance, and then runs ttest and wilcoxon test ( 2 variables) .
@@ -109,8 +112,11 @@ grid.arrange(sigplots[[4]], ncol = 1)
 
 ## Regression Models With Change Score of Subcortical Volume Measures as Outcome
 
-The following table presents the mean change score for each subcortical volume measurement, stratified by random group, and the standard deviation. Then, a regreesion model was used to acquire p-values for the random_group variable: 
-change_score = random_group + sub_cor_measure_baseline + IntraCranialVolume_post + np_age + np_gender where sub_cor_measure_baseline is the subcortical volume measure being analyzed. Each model was ran twice, one with and another without the propensity weights applied, and the p-values after multiple comparison correction are presented as well. 
+The following table presents the mean change score for each subcortical volume measurement, stratified by random group, and the standard
+deviation. Then, a regreesion model was used to acquire p-values for the random_group variable:
+change_score = random_group + sub_cor_measure_baseline + IntraCranialVolume_post + np_age + np_gender where sub_cor_measure_baseline is
+the subcortical volume measure being analyzed. Each model was ran twice, one with and another without the propensity weights applied, and
+the p-values after multiple comparison correction are presented as well. 
 
 ```{r Change in Subcortical Volume Regression, echo=FALSE}
 runglm <- function(xvar) {
@@ -148,7 +154,8 @@ kable(pvals, format = "html") %>%
 ```
 
 For this analysis, the p-values presented are of the interaction term between random_group and age at baseline.
-Regression Model: change_score = random_group\*np_age + sub_cor_measure_baseline + IntraCranialVolume_post + np_age + np_gender where sub_cor_measure_baseline is the subcortical volume measure being analyzed.
+Regression Model: change_score = random_group\*np_age + sub_cor_measure_baseline + IntraCranialVolume_post + np_age + np_gender where
+sub_cor_measure_baseline is the subcortical volume measure being analyzed.
 ```{r Change in Subcortical Volume Regression w/ interaction, echo=FALSE}
 runglm_inter <- function(xvar) {
   
